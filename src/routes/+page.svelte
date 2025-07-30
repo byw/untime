@@ -452,9 +452,28 @@
 					min="1" 
 					max="3600" 
 					value={initialTime}
-					on:input={(e) => updateTime(parseInt(e.currentTarget.value) || 60)}
+					on:input={(e) => {
+						const value = e.currentTarget.value;
+						if (value === '') {
+							// Allow empty input temporarily
+							return;
+						}
+						const numValue = parseInt(value);
+						if (!isNaN(numValue) && numValue >= 1) {
+							updateTime(numValue);
+						}
+					}}
+					on:blur={(e) => {
+						const value = e.currentTarget.value;
+						if (value === '' || parseInt(value) < 1) {
+							// Set to minimum value if empty or invalid
+							updateTime(1);
+							e.currentTarget.value = '1';
+						}
+					}}
 					autofocus
 					use:selectAll
+					inputmode="numeric"
 				/>
 			</div>
 			
