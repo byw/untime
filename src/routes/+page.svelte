@@ -14,6 +14,7 @@
 	let deferredPrompt = $state<any>(null); // PWA install prompt
 	let showInstallPrompt = $state(false); // Show install button
 	let chimeAudio = $state<HTMLAudioElement | null>(null); // Meditation chime audio
+	let wakeLock = $state<WakeLockSentinel | null>(null); // Wake lock to prevent sleep
 
 	// Calculate responsive dot count based on screen size
 	function calculateDotCount() {
@@ -102,6 +103,27 @@
 		}
 	});
 
+	// Handle page visibility changes for wake lock
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			const handleVisibilityChange = async () => {
+				if (document.hidden && wakeLock) {
+					// Release wake lock when page becomes hidden
+					await releaseWakeLock();
+				} else if (!document.hidden && isRunning && !wakeLock) {
+					// Re-request wake lock when page becomes visible and timer is running
+					await requestWakeLock();
+				}
+			};
+
+			document.addEventListener('visibilitychange', handleVisibilityChange);
+
+			return () => {
+				document.removeEventListener('visibilitychange', handleVisibilityChange);
+			};
+		}
+	});
+
 	// PWA install prompt handling
 	$effect(() => {
 		if (typeof window !== 'undefined') {
@@ -169,7 +191,7 @@
 	let longPressTriggered = $state(false);
 
 	// Handle click to toggle timer (only when settings not shown)
-	function toggleTimer(event: Event) {
+	async function toggleTimer(event: Event) {
 		// Prevent toggle if settings are shown or if this was a long press
 		if (showSettings || longPressTriggered) {
 			longPressTriggered = false; // Reset for next interaction
@@ -183,9 +205,14 @@
 				clearInterval(intervalId);
 				intervalId = null;
 			}
+			// Release wake lock when timer stops
+			await releaseWakeLock();
 		} else {
 			// Start timer
 			isRunning = true;
+			
+			// Request wake lock when timer starts
+			await requestWakeLock();
 			
 			// Calculate interval so one dot dims at a time
 			const intervalMs = (initialTime * 1000) / totalDots;
@@ -201,6 +228,8 @@
 						clearInterval(intervalId);
 						intervalId = null;
 					}
+					// Release wake lock when timer completes
+					releaseWakeLock();
 					// Play meditation chime when timer completes
 					playChime();
 				}
@@ -209,7 +238,7 @@
 	}
 
 	// Handle settings form
-	function updateTime(newTime: number) {
+	async function updateTime(newTime: number) {
 		// Stop timer if it's running when time is changed
 		if (isRunning) {
 			isRunning = false;
@@ -217,6 +246,8 @@
 				clearInterval(intervalId);
 				intervalId = null;
 			}
+			// Release wake lock when timer is stopped
+			await releaseWakeLock();
 		}
 		
 		// Update both time values
@@ -224,7 +255,7 @@
 		initialTime = newTime;
 	}
 
-	function resetTimer() {
+	async function resetTimer() {
 		// Stop timer if it's running
 		if (isRunning) {
 			isRunning = false;
@@ -232,6 +263,8 @@
 				clearInterval(intervalId);
 				intervalId = null;
 			}
+			// Release wake lock when timer is stopped
+			await releaseWakeLock();
 		}
 		
 		// Reset to the current initialTime (which may have been updated in settings)
@@ -249,6 +282,31 @@
 	function selectAll(node: HTMLInputElement) {
 		node.focus();
 		node.select();
+	}
+
+	// Request wake lock to prevent device sleep
+	async function requestWakeLock() {
+		if (typeof window !== 'undefined' && 'wakeLock' in navigator) {
+			try {
+				wakeLock = await navigator.wakeLock.request('screen');
+				console.log('Wake lock acquired');
+			} catch (err) {
+				console.log('Wake lock failed:', err);
+			}
+		}
+	}
+
+	// Release wake lock to allow device sleep
+	async function releaseWakeLock() {
+		if (wakeLock) {
+			try {
+				await wakeLock.release();
+				wakeLock = null;
+				console.log('Wake lock released');
+			} catch (err) {
+				console.log('Wake lock release failed:', err);
+			}
+		}
 	}
 
 	// Play meditation chime

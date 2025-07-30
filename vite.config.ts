@@ -9,6 +9,11 @@ export default defineConfig({
 		sveltekit(),
 		devtoolsJson()
 	],
+	server: {
+		allowedHosts: [
+			'50741fbb52ae.ngrok-free.app',
+		],
+	},
 	test: {
 		projects: [
 			{
