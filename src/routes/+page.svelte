@@ -1,18 +1,52 @@
 <script lang="ts">
 	// State management using Svelte 5 syntax
 	let timeLeft = $state(60); // Default 60 seconds countdown
+	let initialTime = $state(60); // Track the initial time for percentage calculation
 	let isRunning = $state(false);
 	let intervalId = $state<number | null>(null);
+	let screenWidth = $state(0);
+	let totalDots = $state(0); // Start with 0 to prevent flash
+	let gridCols = $state(10); // Track number of columns for perfect grid
 
 	// Initialize from localStorage on client side
 	if (typeof window !== 'undefined') {
 		timeLeft = parseInt(localStorage.getItem('timer_timeLeft') || '60');
+		initialTime = timeLeft; // Set initial time to current timeLeft
 	}
 
 	// Persist timeLeft to localStorage whenever it changes
 	$effect(() => {
 		if (typeof window !== 'undefined') {
 			localStorage.setItem('timer_timeLeft', timeLeft.toString());
+		}
+	});
+
+	// Calculate responsive dot count based on screen size
+	function calculateDotCount() {
+		if (typeof window !== 'undefined') {
+			screenWidth = window.innerWidth;
+			// Base calculation: 1 dot per 20px of screen width, minimum 50, maximum 400
+			const baseDots = Math.max(50, Math.min(400, Math.floor(screenWidth / 20)));
+			
+			// Calculate grid dimensions to ensure perfect rectangle
+			const cols = Math.ceil(Math.sqrt(baseDots));
+			const rows = Math.ceil(baseDots / cols);
+			gridCols = cols; // Store the exact number of columns
+			totalDots = cols * rows; // This ensures a perfect rectangle
+		}
+	}
+
+	// Use effect to handle grid calculation on mount and resize
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			calculateDotCount();
+			
+			const handleResize = () => calculateDotCount();
+			window.addEventListener('resize', handleResize);
+			
+			return () => {
+				window.removeEventListener('resize', handleResize);
+			};
 		}
 	});
 
@@ -42,7 +76,7 @@
 
 	function resetTimer() {
 		pauseTimer();
-		timeLeft = 60;
+		timeLeft = initialTime;
 	}
 
 	function stopTimer() {
@@ -77,15 +111,22 @@
 		</div>
 	</div>
 
-	<div class="dots-grid">
-		{#each Array(100) as _, i}
-			<div 
-				class="dot" 
-				class:dimmed={i < (100 - timeLeft)}
-				style="opacity: {i >= (100 - timeLeft) ? 1 : 0.2}"
-			></div>
-		{/each}
-	</div>
+	{#if totalDots > 0}
+		<div 
+			class="dots-grid"
+			style="grid-template-columns: repeat({gridCols}, 1fr);"
+		>
+			{#each Array(totalDots) as _, i}
+				{@const elapsedPercentage = (initialTime - timeLeft) / initialTime}
+				{@const dotsToDim = Math.floor(elapsedPercentage * totalDots)}
+				<div 
+					class="dot" 
+					class:dimmed={i < dotsToDim}
+					style="opacity: {i >= dotsToDim ? 1 : 0.2}"
+				></div>
+			{/each}
+		</div>
+	{/if}
 
 	<div class="controls">
 		{#if !isRunning && timeLeft > 0}
@@ -113,7 +154,9 @@
 			value={timeLeft}
 			on:input={(e) => {
 				if (!isRunning) {
-					timeLeft = parseInt(e.currentTarget.value) || 60;
+					const newTime = parseInt(e.currentTarget.value) || 60;
+					timeLeft = newTime;
+					initialTime = newTime;
 				}
 			}}
 		/>
@@ -244,17 +287,18 @@
 
 	.dots-grid {
 		display: grid;
-		grid-template-columns: repeat(10, 1fr);
-		gap: 0.5rem;
+		gap: 0.25rem;
 		margin: 2rem 0;
-		max-width: 300px;
+		max-width: 90vw;
 		margin-left: auto;
 		margin-right: auto;
+		padding: 0 1rem;
+		justify-items: center;
 	}
 
 	.dot {
-		width: 12px;
-		height: 12px;
+		width: clamp(6px, 1.5vw, 12px);
+		height: clamp(6px, 1.5vw, 12px);
 		border-radius: 50%;
 		background-color: #2563eb;
 		transition: opacity 0.3s ease;
