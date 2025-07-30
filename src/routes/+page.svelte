@@ -13,6 +13,7 @@
 	let longPressTimer = $state<number | null>(null); // Long press timer
 	let deferredPrompt = $state<any>(null); // PWA install prompt
 	let showInstallPrompt = $state(false); // Show install button
+	let chimeAudio = $state<HTMLAudioElement | null>(null); // Meditation chime audio
 
 	// Calculate responsive dot count based on screen size
 	function calculateDotCount() {
@@ -72,6 +73,32 @@
 			return () => {
 				window.removeEventListener('resize', handleResize);
 			};
+		}
+	});
+
+	// Initialize meditation chime audio
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			// Create a simple meditation chime using Web Audio API
+			const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+			const oscillator = audioContext.createOscillator();
+			const gainNode = audioContext.createGain();
+			
+			oscillator.connect(gainNode);
+			gainNode.connect(audioContext.destination);
+			
+			// Configure for a soft meditation chime
+			oscillator.type = 'sine';
+			oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // A5 note
+			oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1); // B5 note
+			oscillator.frequency.setValueAtTime(1200, audioContext.currentTime + 0.2); // D6 note
+			
+			gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+			gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.1);
+			gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
+			
+			// Store the audio context for later use
+			chimeAudio = { context: audioContext, oscillator, gainNode } as any;
 		}
 	});
 
@@ -174,6 +201,8 @@
 						clearInterval(intervalId);
 						intervalId = null;
 					}
+					// Play meditation chime when timer completes
+					playChime();
 				}
 			}, intervalMs);
 		}
@@ -200,6 +229,38 @@
 	function selectAll(node: HTMLInputElement) {
 		node.focus();
 		node.select();
+	}
+
+	// Play meditation chime
+	function playChime() {
+		if (chimeAudio && typeof window !== 'undefined') {
+			const { context, oscillator, gainNode } = chimeAudio as any;
+			
+			// Resume audio context if suspended (required for iOS)
+			if (context.state === 'suspended') {
+				context.resume();
+			}
+			
+			// Create new oscillator for each chime (since they can only be used once)
+			const newOscillator = context.createOscillator();
+			const newGainNode = context.createGain();
+			
+			newOscillator.connect(newGainNode);
+			newGainNode.connect(context.destination);
+			
+			// Configure the chime
+			newOscillator.type = 'sine';
+			newOscillator.frequency.setValueAtTime(800, context.currentTime);
+			newOscillator.frequency.setValueAtTime(1000, context.currentTime + 0.1);
+			newOscillator.frequency.setValueAtTime(1200, context.currentTime + 0.2);
+			
+			newGainNode.gain.setValueAtTime(0, context.currentTime);
+			newGainNode.gain.linearRampToValueAtTime(0.2, context.currentTime + 0.1);
+			newGainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 2);
+			
+			newOscillator.start(context.currentTime);
+			newOscillator.stop(context.currentTime + 2);
+		}
 	}
 
 	// PWA install function
