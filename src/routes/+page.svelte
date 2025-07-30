@@ -9,6 +9,8 @@
 	let initialTime = $state(60); // Initial time for percentage calculation
 	let intervalId = $state<number | null>(null);
 	let hasRestoredFromStorage = $state(false); // Track if we've restored from localStorage
+	let showSettings = $state(false); // Show settings form
+	let longPressTimer = $state<number | null>(null); // Long press timer
 
 	// Calculate responsive dot count based on screen size
 	function calculateDotCount() {
@@ -71,8 +73,32 @@
 		}
 	});
 
-	// Handle click to toggle timer
+	// Handle long press to show settings
+	function handleMouseDown() {
+		longPressTimer = setTimeout(() => {
+			showSettings = true;
+			// Pause timer when settings are shown
+			if (isRunning) {
+				isRunning = false;
+				if (intervalId) {
+					clearInterval(intervalId);
+					intervalId = null;
+				}
+			}
+		}, 500); // 500ms long press
+	}
+
+	function handleMouseUp() {
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+	}
+
+	// Handle click to toggle timer (only when settings not shown)
 	function toggleTimer() {
+		if (showSettings) return; // Don't toggle if settings are shown
+		
 		if (isRunning) {
 			// Stop timer
 			isRunning = false;
@@ -102,6 +128,31 @@
 			}, intervalMs);
 		}
 	}
+
+	// Handle settings form
+	function updateTime(newTime: number) {
+		timeLeft = newTime;
+		initialTime = newTime;
+	}
+
+	function resetTimer() {
+		timeLeft = initialTime;
+		showSettings = false; // Hide settings after reset
+	}
+
+	function closeSettings() {
+		showSettings = false;
+		// Resume timer if it was running before
+		if (!isRunning && timeLeft > 0) {
+			toggleTimer();
+		}
+	}
+
+	// Action to select all text in input
+	function selectAll(node: HTMLInputElement) {
+		node.focus();
+		node.select();
+	}
 </script>
 
 {#if totalDots > 0}
@@ -109,6 +160,9 @@
 		class="dots-grid"
 		style="grid-template-columns: repeat({gridCols}, 1fr);"
 		on:click={toggleTimer}
+		on:mousedown={handleMouseDown}
+		on:mouseup={handleMouseUp}
+		on:mouseleave={handleMouseUp}
 		role="button"
 		tabindex="0"
 		on:keydown={(e) => e.key === ' ' && toggleTimer()}
@@ -121,6 +175,35 @@
 				class:dimmed={i < dotsToDim}
 			></div>
 		{/each}
+	</div>
+{/if}
+
+{#if showSettings}
+	<div class="settings-overlay" on:click={closeSettings}>
+		<div class="settings-form" on:click|stopPropagation>
+			<div class="form-group">
+				<label for="timeInput">Total Time (seconds):</label>
+				<input 
+					id="timeInput" 
+					type="number" 
+					min="1" 
+					max="3600" 
+					value={initialTime}
+					on:input={(e) => updateTime(parseInt(e.currentTarget.value) || 60)}
+					autofocus
+					use:selectAll
+				/>
+			</div>
+			
+			<div class="form-actions">
+				<button class="btn btn-reset" on:click={resetTimer}>
+					Reset Timer
+				</button>
+				<button class="btn btn-close" on:click={closeSettings}>
+					Close
+				</button>
+			</div>
+		</div>
 	</div>
 {/if}
 
@@ -154,5 +237,95 @@
 
 	.dot.dimmed {
 		background-color: #44475a;
+	}
+
+	.settings-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100vw;
+		height: 100vh;
+		background-color: rgba(40, 42, 54, 0.9);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 1000;
+	}
+
+	.settings-form {
+		background-color: #44475a;
+		padding: 2rem;
+		border-radius: 8px;
+		min-width: 300px;
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+		text-align: center;
+	}
+
+	.settings-form h2 {
+		color: #f8f8f2;
+		margin: 0 0 1.5rem 0;
+		text-align: center;
+	}
+
+	.form-group {
+		margin-bottom: 1.5rem;
+	}
+
+	.form-group label {
+		display: block;
+		color: #f8f8f2;
+		margin-bottom: 0.5rem;
+		font-weight: bold;
+		text-align: center;
+	}
+
+	.form-group input {
+		width: 100%;
+		padding: 0.75rem;
+		border: 2px solid #6272a4;
+		border-radius: 4px;
+		background-color: #282a36;
+		color: #f8f8f2;
+		font-size: 1rem;
+		box-sizing: border-box;
+	}
+
+	.form-group input:focus {
+		outline: none;
+		border-color: #8be9fd;
+	}
+
+	.form-actions {
+		display: flex;
+		gap: 1rem;
+		justify-content: center;
+	}
+
+	.btn {
+		padding: 0.75rem 1.5rem;
+		border: none;
+		border-radius: 4px;
+		font-size: 1rem;
+		font-weight: bold;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.btn-reset {
+		background-color: #ff5555;
+		color: white;
+	}
+
+	.btn-reset:hover {
+		background-color: #ff3333;
+	}
+
+	.btn-close {
+		background-color: #6272a4;
+		color: white;
+	}
+
+	.btn-close:hover {
+		background-color: #7c8db8;
 	}
 </style>
