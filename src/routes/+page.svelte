@@ -17,7 +17,7 @@
 			screenHeight = window.innerHeight;
 			
 			// Calculate grid based on dot size and spacing
-			const dotSize = 12; // dot width/height
+			const dotSize = 8; // dot width/height
 			const gap = 2; // gap between dots
 			const padding = 16; // padding from edges (1rem = 16px)
 			
@@ -125,6 +125,13 @@
 {/if}
 
 <style>
+	:global(body) {
+		margin: 0;
+		padding: 0;
+		background-color: #282a36;
+		overflow: hidden;
+	}
+
 	.dots-grid {
 		display: grid;
 		gap: 2px;
@@ -133,18 +140,19 @@
 		padding: 1rem;
 		box-sizing: border-box;
 		cursor: pointer;
+		background-color: #282a36;
 	}
 
 	.dot {
-		width: 12px;
-		height: 12px;
+		width: 8px;
+		height: 8px;
 		border-radius: 50%;
-		background-color: #2563eb;
+		background-color: #8be9fd;
 		justify-self: center;
 		align-self: center;
 	}
 
 	.dot.dimmed {
-		background-color: #9ca3af;
+		background-color: #44475a;
 	}
 </style>
