@@ -161,8 +161,8 @@
 	// Handle touch events for iOS compatibility
 	function handleTouchStart() {
 		longPressTimer = setTimeout(() => {
-			// Navigate to settings page
-			goto('/settings');
+			// Navigate to settings page with correct base path
+			goto('/untime/settings');
 		}, 800); // 800ms for touch devices
 	}
 

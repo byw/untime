@@ -95,12 +95,12 @@
 		// Reset to the current initialTime (which may have been updated in settings)
 		timeLeft = initialTime;
 		// Navigate back to main page after reset
-		goto('/');
+		goto('/untime/');
 	}
 
 	function closeSettings() {
 		// Navigate back to main page
-		goto('/');
+		goto('/untime/');
 	}
 
 	// Action to select all text in input
