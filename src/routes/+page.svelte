@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+
 	// State management using Svelte 5 syntax
 	let screenWidth = $state(0);
 	let screenHeight = $state(0);
@@ -9,7 +11,6 @@
 	let initialTime = $state(60); // Initial time for percentage calculation
 	let intervalId = $state<number | null>(null);
 	let hasRestoredFromStorage = $state(false); // Track if we've restored from localStorage
-	let showSettings = $state(false); // Show settings form
 	let longPressTimer = $state<number | null>(null); // Long press timer
 	let deferredPrompt = $state<any>(null); // PWA install prompt
 	let showInstallPrompt = $state(false); // Show install button
@@ -159,19 +160,9 @@
 
 	// Handle touch events for iOS compatibility
 	function handleTouchStart() {
-		if (showSettings) return; // Don't start long press if settings are shown
-		
 		longPressTimer = setTimeout(() => {
-			showSettings = true;
-			longPressTriggered = true; // Mark that long press was triggered
-			// Pause timer when settings are shown
-			if (isRunning) {
-				isRunning = false;
-				if (intervalId) {
-					clearInterval(intervalId);
-					intervalId = null;
-				}
-			}
+			// Navigate to settings page
+			goto('/settings');
 		}, 800); // 800ms for touch devices
 	}
 
@@ -179,12 +170,6 @@
 		if (longPressTimer) {
 			clearTimeout(longPressTimer);
 			longPressTimer = null;
-		}
-		
-		// If settings are shown and this touch ended outside the form, prevent default
-		if (showSettings) {
-			event.preventDefault();
-			event.stopPropagation();
 		}
 	}
 
@@ -196,16 +181,8 @@
 		}
 	}
 
-	// Track if long press was triggered to prevent click after long press
-	let longPressTriggered = $state(false);
-
-	// Handle click to toggle timer (only when settings not shown)
+	// Handle click to toggle timer
 	async function toggleTimer(event: Event) {
-		// Prevent toggle if settings are shown or if this was a long press
-		if (showSettings || longPressTriggered) {
-			longPressTriggered = false; // Reset for next interaction
-			return;
-		}
 		
 		if (isRunning) {
 			// Stop timer
@@ -246,46 +223,7 @@
 		}
 	}
 
-	// Handle settings form
-	async function updateTime(newTime: number) {
-		// Stop timer if it's running when time is changed
-		if (isRunning) {
-			isRunning = false;
-			if (intervalId) {
-				clearInterval(intervalId);
-				intervalId = null;
-			}
-			// Release wake lock when timer is stopped
-			await releaseWakeLock();
-		}
-		
-		// Update both time values
-		timeLeft = newTime;
-		initialTime = newTime;
-	}
 
-	async function resetTimer() {
-		// Stop timer if it's running
-		if (isRunning) {
-			isRunning = false;
-			if (intervalId) {
-				clearInterval(intervalId);
-				intervalId = null;
-			}
-			// Release wake lock when timer is stopped
-			await releaseWakeLock();
-		}
-		
-		// Reset to the current initialTime (which may have been updated in settings)
-		timeLeft = initialTime;
-		showSettings = false; // Hide settings after reset
-	}
-
-	function closeSettings(event?: Event) {
-		showSettings = false;
-		longPressTriggered = false; // Reset the flag when closing settings
-		// Don't automatically resume timer - let user click to start/stop
-	}
 
 	// Action to select all text in input
 	function selectAll(node: HTMLInputElement) {
@@ -441,69 +379,7 @@
 	</div>
 {/if}
 
-{#if showSettings}
-	<div class="settings-overlay">
-		<div class="settings-form">
-			<div class="form-group">
-				<label for="timeInput">Total Time (seconds):</label>
-				<input 
-					id="timeInput" 
-					type="number" 
-					min="1" 
-					max="3600" 
-					value={initialTime}
-					on:input={(e) => {
-						const value = e.currentTarget.value;
-						if (value === '') {
-							// Allow empty input temporarily
-							return;
-						}
-						const numValue = parseInt(value);
-						if (!isNaN(numValue) && numValue >= 1) {
-							updateTime(numValue);
-						}
-					}}
-					on:blur={(e) => {
-						const value = e.currentTarget.value;
-						if (value === '' || parseInt(value) < 1) {
-							// Set to minimum value if empty or invalid
-							updateTime(1);
-							e.currentTarget.value = '1';
-						}
-					}}
-					autofocus
-					use:selectAll
-					inputmode="numeric"
-				/>
-			</div>
-			
-			<div class="form-actions">
-				<button class="btn btn-reset" on:click={resetTimer}>
-					Reset Timer
-				</button>
-				{#if deferredPrompt}
-					<button class="btn btn-install" on:click={installPWA}>
-						📱 Install App
-					</button>
-				{:else if isAppInstalled}
-					<div class="app-status">
-						✅ App Installed
-					</div>
-				{:else}
-					<div class="app-status">
-						ℹ️ Add to Home Screen
-					</div>
-				{/if}
-				<button class="btn btn-refresh" on:click={refreshPWA} disabled={isRefreshing}>
-					{isRefreshing ? '🔄 Refreshing...' : '🔄 Refresh App'}
-				</button>
-				<button class="btn btn-close" on:click={closeSettings}>
-					Close
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
+
 
 <style>
 	:global(body) {
@@ -541,152 +417,7 @@
 		background-color: #44475a;
 	}
 
-	.settings-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100vw;
-		height: 100vh;
-		background-color: #282a36;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		z-index: 1000;
-	}
 
-	.settings-form {
-		background-color: #44475a;
-		padding: 3rem 2rem;
-		border-radius: 0;
-		width: 100%;
-		height: 100%;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		box-shadow: none;
-		text-align: center;
-	}
-
-	.settings-form h2 {
-		color: #f8f8f2;
-		margin: 0 0 1.5rem 0;
-		text-align: center;
-	}
-
-	.form-group {
-		margin-bottom: 3rem;
-		width: 100%;
-		max-width: 400px;
-	}
-
-	.form-group label {
-		display: block;
-		color: #f8f8f2;
-		margin-bottom: 1rem;
-		font-weight: bold;
-		text-align: center;
-		font-size: 1.2rem;
-	}
-
-	.form-group input {
-		width: 100%;
-		padding: 1.5rem;
-		border: 2px solid #6272a4;
-		border-radius: 8px;
-		background-color: #282a36;
-		color: #f8f8f2;
-		font-size: 1.5rem;
-		box-sizing: border-box;
-		text-align: center;
-	}
-
-	.form-group input:focus {
-		outline: none;
-		border-color: #8be9fd;
-	}
-
-	.form-actions {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-		justify-content: center;
-		width: 100%;
-		max-width: 400px;
-	}
-
-	.btn {
-		padding: 1.5rem 2rem;
-		border: none;
-		border-radius: 12px;
-		font-size: 1.2rem;
-		font-weight: bold;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		width: 100%;
-	}
-
-	.btn-reset {
-		background-color: #ff5555;
-		color: white;
-	}
-
-	.btn-reset:hover {
-		background-color: #ff3333;
-	}
-
-	.btn-close {
-		background-color: #6272a4;
-		color: white;
-	}
-
-	.btn-close:hover {
-		background-color: #7c8db8;
-	}
-
-	.btn-install {
-		background: linear-gradient(135deg, #8be9fd, #00ffff);
-		color: #282a36;
-		border: none;
-		font-weight: bold;
-	}
-
-	.btn-install:hover {
-		background: linear-gradient(135deg, #00ffff, #8be9fd);
-		transform: translateY(-1px);
-		box-shadow: 0 4px 15px rgba(139, 233, 253, 0.3);
-	}
-
-	.btn-refresh {
-		background: linear-gradient(135deg, #50fa7b, #69ff94);
-		color: #282a36;
-		border: none;
-		font-weight: bold;
-	}
-
-	.btn-refresh:hover:not(:disabled) {
-		background: linear-gradient(135deg, #69ff94, #50fa7b);
-		transform: translateY(-1px);
-		box-shadow: 0 4px 15px rgba(80, 250, 123, 0.3);
-	}
-
-	.btn-refresh:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-		transform: none;
-		box-shadow: none;
-	}
-
-	.app-status {
-		padding: 1rem;
-		text-align: center;
-		color: #8be9fd;
-		font-size: 1rem;
-		font-weight: bold;
-		background-color: rgba(139, 233, 253, 0.1);
-		border-radius: 8px;
-		border: 1px solid rgba(139, 233, 253, 0.3);
-	}
 
 	.install-prompt {
 		position: fixed;
