@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 
 	// State management using Svelte 5 syntax
 	let screenWidth = $state(0);
@@ -164,11 +165,11 @@
 	function handlePointerDown(event: PointerEvent) {
 		// Only handle primary pointer (left mouse button or first touch)
 		if (event.isPrimary) {
-			longPressTimer = setTimeout(() => {
-				longPressDetected = true;
-				// Navigate to settings page with correct base path
-				goto('/untime/settings');
-			}, 800); // 800ms for long press
+					longPressTimer = setTimeout(() => {
+			longPressDetected = true;
+			// Navigate to settings page with correct base path
+			goto(`${base}/settings`);
+		}, 800); // 800ms for long press
 		}
 	}
 

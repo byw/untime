@@ -6,7 +6,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		
 		<!-- PWA Manifest -->
-		<link rel="manifest" href="%sveltekit.assets%/manifest.json" />
+		<link rel="manifest" href="" id="manifest-link" />
 		
 		<!-- PWA Meta Tags -->
 		<meta name="application-name" content="Untime" />
@@ -39,9 +39,16 @@
 		
 		<!-- Service Worker Registration -->
 		<script>
+			// Set dynamic manifest href
+			const manifestLink = document.getElementById('manifest-link');
+			const basePath = window.location.pathname.includes('/untime') ? '/untime' : '';
+			manifestLink.href = `${basePath}/manifest.json`;
+			
 			if ('serviceWorker' in navigator) {
 				window.addEventListener('load', () => {
-					navigator.serviceWorker.register('/sw.js')
+					// Register service worker with dynamic path
+					const swPath = window.location.pathname.includes('/untime') ? '/untime/sw.js' : '/sw.js';
+					navigator.serviceWorker.register(swPath)
 						.then(registration => {
 							console.log('SW registered: ', registration);
 						})

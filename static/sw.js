@@ -1,10 +1,23 @@
 const CACHE_NAME = 'untime-v1';
+
+// Get the base path from the current location
+const getBasePath = () => {
+  const path = self.location.pathname;
+  // If we're in a subdirectory, extract it
+  if (path.includes('/untime')) {
+    return '/untime';
+  }
+  return '';
+};
+
+const basePath = getBasePath();
+
 const STATIC_RESOURCES = [
-  '/untime/',
-  '/untime/manifest.json',
-  '/untime/favicon.svg',
-  '/untime/icon-192x192.png',
-  '/untime/icon-512x512.png'
+  `${basePath}/`,
+  `${basePath}/manifest.json`,
+  `${basePath}/favicon.svg`,
+  `${basePath}/icon-192x192.png`,
+  `${basePath}/icon-512x512.png`
 ];
 
 // Install event - cache static resources
@@ -42,7 +55,7 @@ self.addEventListener('fetch', event => {
       .catch(() => {
         // If both cache and network fail, return offline page
         if (event.request.destination === 'document') {
-          return caches.match('/untime/');
+          return caches.match(`${basePath}/`);
         }
       })
   );

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 
 	// State management
 	let timeLeft = $state(60); // Time remaining in seconds
@@ -63,12 +63,12 @@
 		// Reset to the current initialTime (which may have been updated in settings)
 		timeLeft = initialTime;
 		// Navigate back to main page after reset
-		goto('/untime/');
+		goto(`${base}/`);
 	}
 
 	function closeSettings() {
 		// Navigate back to main page
-		goto('/untime/');
+		goto(`${base}/`);
 	}
 
 	// Action to select all text in input
