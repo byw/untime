@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { navigation } from '$lib/navigation.js';
+	import { createSwipeHandler } from '$lib/swipe-gesture.js';
 
 	// State management
 	let timeLeft = $state(60); // Time remaining in seconds
@@ -63,12 +65,12 @@
 		// Reset to the current initialTime (which may have been updated in settings)
 		timeLeft = initialTime;
 		// Navigate back to main page after reset
-		goto('/untime/');
+		navigation.navigate('home');
 	}
 
 	function closeSettings() {
 		// Navigate back to main page
-		goto('/untime/');
+		navigation.navigate('home');
 	}
 
 	// Action to select all text in input
@@ -78,6 +80,17 @@
 	}
 
 
+
+	// Handle swipe navigation
+	const swipeHandler = createSwipeHandler({
+		onSwipeLeft: () => {
+			// Swipe left to go back home
+			navigation.navigate('home');
+		},
+		onSwipeRight: () => {
+			// Swipe right on settings does nothing
+		}
+	});
 
 	// Refresh PWA from server
 	async function refreshPWA() {
@@ -125,7 +138,12 @@
 
 
 
-<div class="settings-page">
+<div 
+	class="settings-page"
+	on:touchstart={swipeHandler.handleTouchStart}
+	on:touchend={swipeHandler.handleTouchEnd}
+	on:touchmove={swipeHandler.handleTouchMove}
+>
 	<div class="settings-form">
 		<div class="form-group">
 			<label for="timeInput">Total Time (seconds):</label>

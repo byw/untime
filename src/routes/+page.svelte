@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { navigation } from '$lib/navigation.js';
+	import { createSwipeHandler } from '$lib/swipe-gesture.js';
 
 	// State management using Svelte 5 syntax
 	let screenWidth = $state(0);
@@ -158,46 +160,19 @@
 		}
 	});
 
-	// Handle touch events for iOS compatibility
-	let longPressDetected = $state(false);
-
-	function handleTouchStart() {
-		longPressTimer = setTimeout(() => {
-			longPressDetected = true;
-			// Navigate to settings page with correct base path
-			goto('/untime/settings');
-		}, 800); // 800ms for touch devices
-	}
-
-	function handleTouchEnd(event: TouchEvent) {
-		if (longPressTimer) {
-			clearTimeout(longPressTimer);
-			longPressTimer = null;
+	// Handle swipe navigation
+	const swipeHandler = createSwipeHandler({
+		onSwipeRight: () => {
+			// Swipe right to go to settings
+			navigation.navigate('settings');
+		},
+		onSwipeLeft: () => {
+			// Swipe left on home does nothing
 		}
-		
-		// If long press was detected, prevent any click events
-		if (longPressDetected) {
-			event.preventDefault();
-			event.stopPropagation();
-			longPressDetected = false;
-		}
-	}
-
-	function handleTouchMove() {
-		// Cancel long press if user moves finger
-		if (longPressTimer) {
-			clearTimeout(longPressTimer);
-			longPressTimer = null;
-		}
-	}
+	});
 
 	// Handle click to toggle timer
 	async function toggleTimer(event: Event) {
-		// Prevent toggle if long press was detected
-		if (longPressDetected) {
-			longPressDetected = false;
-			return;
-		}
 		
 		if (isRunning) {
 			// Stop timer
@@ -376,9 +351,9 @@
 		class="dots-grid"
 		style="grid-template-columns: repeat({gridCols}, 1fr);"
 		on:click={toggleTimer}
-		on:touchstart={handleTouchStart}
-		on:touchend={handleTouchEnd}
-		on:touchmove={handleTouchMove}
+		on:touchstart={swipeHandler.handleTouchStart}
+		on:touchend={swipeHandler.handleTouchEnd}
+		on:touchmove={swipeHandler.handleTouchMove}
 		role="button"
 		tabindex="0"
 		on:keydown={(e) => e.key === ' ' && toggleTimer(e)}
