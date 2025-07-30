@@ -105,6 +105,7 @@
 		
 		longPressTimer = setTimeout(() => {
 			showSettings = true;
+			longPressTriggered = true; // Mark that long press was triggered
 			// Pause timer when settings are shown
 			if (isRunning) {
 				isRunning = false;
@@ -131,9 +132,16 @@
 		}
 	}
 
+	// Track if long press was triggered to prevent click after long press
+	let longPressTriggered = $state(false);
+
 	// Handle click to toggle timer (only when settings not shown)
-	function toggleTimer() {
-		if (showSettings) return; // Don't toggle if settings are shown
+	function toggleTimer(event: Event) {
+		// Prevent toggle if settings are shown or if this was a long press
+		if (showSettings || longPressTriggered) {
+			longPressTriggered = false; // Reset for next interaction
+			return;
+		}
 		
 		if (isRunning) {
 			// Stop timer
@@ -178,10 +186,8 @@
 
 	function closeSettings() {
 		showSettings = false;
-		// Resume timer if it was running before
-		if (!isRunning && timeLeft > 0) {
-			toggleTimer();
-		}
+		longPressTriggered = false; // Reset the flag when closing settings
+		// Don't automatically resume timer - let user click to start/stop
 	}
 
 	// Action to select all text in input
