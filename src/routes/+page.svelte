@@ -8,6 +8,7 @@
 	let timeLeft = $state(60); // Time remaining in seconds
 	let initialTime = $state(60); // Initial time for percentage calculation
 	let intervalId = $state<number | null>(null);
+	let hasRestoredFromStorage = $state(false); // Track if we've restored from localStorage
 
 	// Calculate responsive dot count based on screen size
 	function calculateDotCount() {
@@ -32,6 +33,29 @@
 			totalDots = cols * rows;
 		}
 	}
+
+	// Restore from localStorage on initial load
+	$effect(() => {
+		if (typeof window !== 'undefined' && !hasRestoredFromStorage) {
+			const savedTimeLeft = localStorage.getItem('timer_timeLeft');
+			const savedInitialTime = localStorage.getItem('timer_initialTime');
+			
+			if (savedTimeLeft && savedInitialTime) {
+				timeLeft = parseFloat(savedTimeLeft);
+				initialTime = parseFloat(savedInitialTime);
+				console.log('Restored from localStorage:', { timeLeft, initialTime });
+			}
+			hasRestoredFromStorage = true;
+		}
+	});
+
+	// Persist timeLeft to localStorage whenever it changes (but not during initial restore)
+	$effect(() => {
+		if (typeof window !== 'undefined' && hasRestoredFromStorage) {
+			localStorage.setItem('timer_timeLeft', timeLeft.toString());
+			localStorage.setItem('timer_initialTime', initialTime.toString());
+		}
+	});
 
 	// Use effect to handle grid calculation on mount and resize
 	$effect(() => {
