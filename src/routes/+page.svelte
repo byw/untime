@@ -77,6 +77,16 @@
 		</div>
 	</div>
 
+	<div class="dots-grid">
+		{#each Array(100) as _, i}
+			<div 
+				class="dot" 
+				class:dimmed={i < (100 - timeLeft)}
+				style="opacity: {i >= (100 - timeLeft) ? 1 : 0.2}"
+			></div>
+		{/each}
+	</div>
+
 	<div class="controls">
 		{#if !isRunning && timeLeft > 0}
 			<button on:click={startTimer} class="btn btn-start">
@@ -230,5 +240,27 @@
 		outline: none;
 		border-color: #2563eb;
 		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+	}
+
+	.dots-grid {
+		display: grid;
+		grid-template-columns: repeat(10, 1fr);
+		gap: 0.5rem;
+		margin: 2rem 0;
+		max-width: 300px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.dot {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background-color: #2563eb;
+		transition: opacity 0.3s ease;
+	}
+
+	.dot.dimmed {
+		background-color: #9ca3af;
 	}
 </style>
