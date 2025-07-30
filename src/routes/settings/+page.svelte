@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { navigation } from '$lib/navigation.js';
-	import { createSwipeHandler } from '$lib/swipe-gesture.js';
 
 	// State management
 	let timeLeft = $state(60); // Time remaining in seconds
@@ -11,6 +9,13 @@
 	let intervalId = $state<number | null>(null);
 	let hasRestoredFromStorage = $state(false); // Track if we've restored from localStorage
 	let isRefreshing = $state(false); // Track refresh state
+	
+	// Handle swipe navigation with pointer events (works with touch, mouse, pen)
+	let pointerStartX = $state(0);
+	let pointerStartY = $state(0);
+	let pointerEndX = $state(0);
+	let pointerEndY = $state(0);
+	let isSwiping = $state(false);
 
 	// Restore from localStorage on initial load
 	$effect(() => {
@@ -65,12 +70,12 @@
 		// Reset to the current initialTime (which may have been updated in settings)
 		timeLeft = initialTime;
 		// Navigate back to main page after reset
-		navigation.navigate('home');
+		goto('/untime/');
 	}
 
 	function closeSettings() {
 		// Navigate back to main page
-		navigation.navigate('home');
+		goto('/untime/');
 	}
 
 	// Action to select all text in input
@@ -79,18 +84,59 @@
 		node.select();
 	}
 
-
-
 	// Handle swipe navigation
-	const swipeHandler = createSwipeHandler({
-		onSwipeLeft: () => {
-			// Swipe left to go back home
-			navigation.navigate('home');
-		},
-		onSwipeRight: () => {
-			// Swipe right on settings does nothing
+	function handlePointerDown(event: PointerEvent) {
+		// Only handle primary pointer (left mouse button, first touch)
+		if (event.isPrimary) {
+			pointerStartX = event.clientX;
+			pointerStartY = event.clientY;
+			isSwiping = false;
 		}
-	});
+	}
+
+	function handlePointerMove(event: PointerEvent) {
+		if (pointerStartX === 0 || !event.isPrimary) return; // No pointer start recorded
+		
+		const currentX = event.clientX;
+		const currentY = event.clientY;
+		const deltaX = Math.abs(currentX - pointerStartX);
+		const deltaY = Math.abs(currentY - pointerStartY);
+		
+		// If horizontal movement is significant, mark as swiping
+		if (deltaX > 50 && deltaX > deltaY) {
+			isSwiping = true;
+		}
+	}
+
+	function handlePointerUp(event: PointerEvent) {
+		if (pointerStartX === 0 || !event.isPrimary) return; // No pointer start recorded
+		
+		pointerEndX = event.clientX;
+		pointerEndY = event.clientY;
+		
+		const deltaX = pointerEndX - pointerStartX;
+		const deltaY = Math.abs(pointerEndY - pointerStartY);
+		const minSwipeDistance = 100;
+		
+		// Check if it's a horizontal swipe with sufficient distance
+		if (Math.abs(deltaX) > minSwipeDistance && Math.abs(deltaX) > deltaY) {
+			if (deltaX < 0) {
+				// Swipe left - go back to home
+				goto('/untime/');
+			} else {
+				// Swipe right - already on settings, do nothing
+			}
+		}
+		
+		// Reset pointer state
+		pointerStartX = 0;
+		pointerStartY = 0;
+		pointerEndX = 0;
+		pointerEndY = 0;
+		isSwiping = false;
+	}
+
+
 
 	// Refresh PWA from server
 	async function refreshPWA() {
@@ -140,9 +186,9 @@
 
 <div 
 	class="settings-page"
-	on:touchstart={swipeHandler.handleTouchStart}
-	on:touchend={swipeHandler.handleTouchEnd}
-	on:touchmove={swipeHandler.handleTouchMove}
+	on:pointerdown={handlePointerDown}
+	on:pointerup={handlePointerUp}
+	on:pointermove={handlePointerMove}
 >
 	<div class="settings-form">
 		<div class="form-group">

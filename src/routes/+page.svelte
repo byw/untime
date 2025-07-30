@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { navigation } from '$lib/navigation.js';
-	import { createSwipeHandler } from '$lib/swipe-gesture.js';
 
 	// State management using Svelte 5 syntax
 	let screenWidth = $state(0);
@@ -160,19 +158,70 @@
 		}
 	});
 
-	// Handle swipe navigation
-	const swipeHandler = createSwipeHandler({
-		onSwipeRight: () => {
-			// Swipe right to go to settings
-			navigation.navigate('settings');
-		},
-		onSwipeLeft: () => {
-			// Swipe left on home does nothing
+	// Handle swipe navigation with pointer events (works with touch, mouse, pen)
+	let pointerStartX = $state(0);
+	let pointerStartY = $state(0);
+	let pointerEndX = $state(0);
+	let pointerEndY = $state(0);
+	let isSwiping = $state(false);
+
+	function handlePointerDown(event: PointerEvent) {
+		// Only handle primary pointer (left mouse button, first touch)
+		if (event.isPrimary) {
+			pointerStartX = event.clientX;
+			pointerStartY = event.clientY;
+			isSwiping = false;
 		}
-	});
+	}
+
+	function handlePointerMove(event: PointerEvent) {
+		if (pointerStartX === 0 || !event.isPrimary) return; // No pointer start recorded
+		
+		const currentX = event.clientX;
+		const currentY = event.clientY;
+		const deltaX = Math.abs(currentX - pointerStartX);
+		const deltaY = Math.abs(currentY - pointerStartY);
+		
+		// If horizontal movement is significant, mark as swiping
+		if (deltaX > 50 && deltaX > deltaY) {
+			isSwiping = true;
+		}
+	}
+
+	function handlePointerUp(event: PointerEvent) {
+		if (pointerStartX === 0 || !event.isPrimary) return; // No pointer start recorded
+		
+		pointerEndX = event.clientX;
+		pointerEndY = event.clientY;
+		
+		const deltaX = pointerEndX - pointerStartX;
+		const deltaY = Math.abs(pointerEndY - pointerStartY);
+		const minSwipeDistance = 100;
+		
+		// Check if it's a horizontal swipe with sufficient distance
+		if (Math.abs(deltaX) > minSwipeDistance && Math.abs(deltaX) > deltaY) {
+			if (deltaX > 0) {
+				// Swipe right - go to settings
+				goto('/untime/settings');
+			} else {
+				// Swipe left - already on home, do nothing
+			}
+		}
+		
+		// Reset pointer state
+		pointerStartX = 0;
+		pointerStartY = 0;
+		pointerEndX = 0;
+		pointerEndY = 0;
+		isSwiping = false;
+	}
 
 	// Handle click to toggle timer
 	async function toggleTimer(event: Event) {
+		// Prevent toggle if swiping
+		if (isSwiping) {
+			return;
+		}
 		
 		if (isRunning) {
 			// Stop timer
@@ -351,9 +400,9 @@
 		class="dots-grid"
 		style="grid-template-columns: repeat({gridCols}, 1fr);"
 		on:click={toggleTimer}
-		on:touchstart={swipeHandler.handleTouchStart}
-		on:touchend={swipeHandler.handleTouchEnd}
-		on:touchmove={swipeHandler.handleTouchMove}
+		on:pointerdown={handlePointerDown}
+		on:pointerup={handlePointerUp}
+		on:pointermove={handlePointerMove}
 		role="button"
 		tabindex="0"
 		on:keydown={(e) => e.key === ' ' && toggleTimer(e)}
