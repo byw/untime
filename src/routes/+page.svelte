@@ -158,68 +158,47 @@
 		}
 	});
 
-	// Handle swipe navigation with pointer events (works with touch, mouse, pen)
-	let pointerStartX = $state(0);
-	let pointerStartY = $state(0);
-	let pointerEndX = $state(0);
-	let pointerEndY = $state(0);
-	let isSwiping = $state(false);
+	// Handle pointer events for cross-platform compatibility
+	let longPressDetected = $state(false);
 
 	function handlePointerDown(event: PointerEvent) {
-		// Only handle primary pointer (left mouse button, first touch)
+		// Only handle primary pointer (left mouse button or first touch)
 		if (event.isPrimary) {
-			pointerStartX = event.clientX;
-			pointerStartY = event.clientY;
-			isSwiping = false;
-		}
-	}
-
-	function handlePointerMove(event: PointerEvent) {
-		if (pointerStartX === 0 || !event.isPrimary) return; // No pointer start recorded
-		
-		const currentX = event.clientX;
-		const currentY = event.clientY;
-		const deltaX = Math.abs(currentX - pointerStartX);
-		const deltaY = Math.abs(currentY - pointerStartY);
-		
-		// If horizontal movement is significant, mark as swiping
-		if (deltaX > 50 && deltaX > deltaY) {
-			isSwiping = true;
+			longPressTimer = setTimeout(() => {
+				longPressDetected = true;
+				// Navigate to settings page with correct base path
+				goto('/untime/settings');
+			}, 800); // 800ms for long press
 		}
 	}
 
 	function handlePointerUp(event: PointerEvent) {
-		if (pointerStartX === 0 || !event.isPrimary) return; // No pointer start recorded
-		
-		pointerEndX = event.clientX;
-		pointerEndY = event.clientY;
-		
-		const deltaX = pointerEndX - pointerStartX;
-		const deltaY = Math.abs(pointerEndY - pointerStartY);
-		const minSwipeDistance = 100;
-		
-		// Check if it's a horizontal swipe with sufficient distance
-		if (Math.abs(deltaX) > minSwipeDistance && Math.abs(deltaX) > deltaY) {
-			if (deltaX > 0) {
-				// Swipe right - go to settings
-				goto('/untime/settings');
-			} else {
-				// Swipe left - already on home, do nothing
-			}
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
 		}
 		
-		// Reset pointer state
-		pointerStartX = 0;
-		pointerStartY = 0;
-		pointerEndX = 0;
-		pointerEndY = 0;
-		isSwiping = false;
+		// If long press was detected, prevent any click events
+		if (longPressDetected) {
+			event.preventDefault();
+			event.stopPropagation();
+			longPressDetected = false;
+		}
+	}
+
+	function handlePointerMove(event: PointerEvent) {
+		// Cancel long press if user moves pointer
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
 	}
 
 	// Handle click to toggle timer
 	async function toggleTimer(event: Event) {
-		// Prevent toggle if swiping
-		if (isSwiping) {
+		// Prevent toggle if long press was detected
+		if (longPressDetected) {
+			longPressDetected = false;
 			return;
 		}
 		

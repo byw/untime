@@ -9,13 +9,6 @@
 	let intervalId = $state<number | null>(null);
 	let hasRestoredFromStorage = $state(false); // Track if we've restored from localStorage
 	let isRefreshing = $state(false); // Track refresh state
-	
-	// Handle swipe navigation with pointer events (works with touch, mouse, pen)
-	let pointerStartX = $state(0);
-	let pointerStartY = $state(0);
-	let pointerEndX = $state(0);
-	let pointerEndY = $state(0);
-	let isSwiping = $state(false);
 
 	// Restore from localStorage on initial load
 	$effect(() => {
@@ -84,58 +77,6 @@
 		node.select();
 	}
 
-	// Handle swipe navigation
-	function handlePointerDown(event: PointerEvent) {
-		// Only handle primary pointer (left mouse button, first touch)
-		if (event.isPrimary) {
-			pointerStartX = event.clientX;
-			pointerStartY = event.clientY;
-			isSwiping = false;
-		}
-	}
-
-	function handlePointerMove(event: PointerEvent) {
-		if (pointerStartX === 0 || !event.isPrimary) return; // No pointer start recorded
-		
-		const currentX = event.clientX;
-		const currentY = event.clientY;
-		const deltaX = Math.abs(currentX - pointerStartX);
-		const deltaY = Math.abs(currentY - pointerStartY);
-		
-		// If horizontal movement is significant, mark as swiping
-		if (deltaX > 50 && deltaX > deltaY) {
-			isSwiping = true;
-		}
-	}
-
-	function handlePointerUp(event: PointerEvent) {
-		if (pointerStartX === 0 || !event.isPrimary) return; // No pointer start recorded
-		
-		pointerEndX = event.clientX;
-		pointerEndY = event.clientY;
-		
-		const deltaX = pointerEndX - pointerStartX;
-		const deltaY = Math.abs(pointerEndY - pointerStartY);
-		const minSwipeDistance = 100;
-		
-		// Check if it's a horizontal swipe with sufficient distance
-		if (Math.abs(deltaX) > minSwipeDistance && Math.abs(deltaX) > deltaY) {
-			if (deltaX < 0) {
-				// Swipe left - go back to home
-				goto('/untime/');
-			} else {
-				// Swipe right - already on settings, do nothing
-			}
-		}
-		
-		// Reset pointer state
-		pointerStartX = 0;
-		pointerStartY = 0;
-		pointerEndX = 0;
-		pointerEndY = 0;
-		isSwiping = false;
-	}
-
 
 
 	// Refresh PWA from server
@@ -184,12 +125,7 @@
 
 
 
-<div 
-	class="settings-page"
-	on:pointerdown={handlePointerDown}
-	on:pointerup={handlePointerUp}
-	on:pointermove={handlePointerMove}
->
+<div class="settings-page">
 	<div class="settings-form">
 		<div class="form-group">
 			<label for="timeInput">Total Time (seconds):</label>
