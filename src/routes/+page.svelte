@@ -99,30 +99,10 @@
 		}
 	});
 
-	// Handle long press to show settings
-	function handleMouseDown() {
-		longPressTimer = setTimeout(() => {
-			showSettings = true;
-			// Pause timer when settings are shown
-			if (isRunning) {
-				isRunning = false;
-				if (intervalId) {
-					clearInterval(intervalId);
-					intervalId = null;
-				}
-			}
-		}, 800); // Increased to 800ms to avoid iOS magnifying glass
-	}
-
-	function handleMouseUp() {
-		if (longPressTimer) {
-			clearTimeout(longPressTimer);
-			longPressTimer = null;
-		}
-	}
-
 	// Handle touch events for iOS compatibility
 	function handleTouchStart() {
+		if (showSettings) return; // Don't start long press if settings are shown
+		
 		longPressTimer = setTimeout(() => {
 			showSettings = true;
 			// Pause timer when settings are shown
