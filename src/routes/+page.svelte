@@ -159,8 +159,11 @@
 	});
 
 	// Handle touch events for iOS compatibility
+	let longPressDetected = $state(false);
+
 	function handleTouchStart() {
 		longPressTimer = setTimeout(() => {
+			longPressDetected = true;
 			// Navigate to settings page with correct base path
 			goto('/untime/settings');
 		}, 800); // 800ms for touch devices
@@ -170,6 +173,13 @@
 		if (longPressTimer) {
 			clearTimeout(longPressTimer);
 			longPressTimer = null;
+		}
+		
+		// If long press was detected, prevent any click events
+		if (longPressDetected) {
+			event.preventDefault();
+			event.stopPropagation();
+			longPressDetected = false;
 		}
 	}
 
@@ -183,6 +193,11 @@
 
 	// Handle click to toggle timer
 	async function toggleTimer(event: Event) {
+		// Prevent toggle if long press was detected
+		if (longPressDetected) {
+			longPressDetected = false;
+			return;
+		}
 		
 		if (isRunning) {
 			// Stop timer
