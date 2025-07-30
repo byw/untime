@@ -210,11 +210,31 @@
 
 	// Handle settings form
 	function updateTime(newTime: number) {
+		// Stop timer if it's running when time is changed
+		if (isRunning) {
+			isRunning = false;
+			if (intervalId) {
+				clearInterval(intervalId);
+				intervalId = null;
+			}
+		}
+		
+		// Update both time values
 		timeLeft = newTime;
 		initialTime = newTime;
 	}
 
 	function resetTimer() {
+		// Stop timer if it's running
+		if (isRunning) {
+			isRunning = false;
+			if (intervalId) {
+				clearInterval(intervalId);
+				intervalId = null;
+			}
+		}
+		
+		// Reset to the current initialTime (which may have been updated in settings)
 		timeLeft = initialTime;
 		showSettings = false; // Hide settings after reset
 	}
