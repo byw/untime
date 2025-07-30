@@ -1,8 +1,20 @@
 <script lang="ts">
 	// State management using Svelte 5 syntax
-	let timeLeft = $state(60); // 60 seconds countdown
+	let timeLeft = $state(60); // Default 60 seconds countdown
 	let isRunning = $state(false);
 	let intervalId = $state<number | null>(null);
+
+	// Initialize from localStorage on client side
+	if (typeof window !== 'undefined') {
+		timeLeft = parseInt(localStorage.getItem('timer_timeLeft') || '60');
+	}
+
+	// Persist timeLeft to localStorage whenever it changes
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('timer_timeLeft', timeLeft.toString());
+		}
+	});
 
 	// Functions for timer control
 	function startTimer() {
