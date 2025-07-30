@@ -111,10 +111,40 @@
 					intervalId = null;
 				}
 			}
-		}, 500); // 500ms long press
+		}, 800); // Increased to 800ms to avoid iOS magnifying glass
 	}
 
 	function handleMouseUp() {
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+	}
+
+	// Handle touch events for iOS compatibility
+	function handleTouchStart() {
+		longPressTimer = setTimeout(() => {
+			showSettings = true;
+			// Pause timer when settings are shown
+			if (isRunning) {
+				isRunning = false;
+				if (intervalId) {
+					clearInterval(intervalId);
+					intervalId = null;
+				}
+			}
+		}, 800); // 800ms for touch devices
+	}
+
+	function handleTouchEnd() {
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+	}
+
+	function handleTouchMove() {
+		// Cancel long press if user moves finger
 		if (longPressTimer) {
 			clearTimeout(longPressTimer);
 			longPressTimer = null;
@@ -210,9 +240,9 @@
 		class="dots-grid"
 		style="grid-template-columns: repeat({gridCols}, 1fr);"
 		on:click={toggleTimer}
-		on:mousedown={handleMouseDown}
-		on:mouseup={handleMouseUp}
-		on:mouseleave={handleMouseUp}
+		on:touchstart={handleTouchStart}
+		on:touchend={handleTouchEnd}
+		on:touchmove={handleTouchMove}
 		role="button"
 		tabindex="0"
 		on:keydown={(e) => e.key === ' ' && toggleTimer()}
@@ -274,6 +304,10 @@
 		box-sizing: border-box;
 		cursor: pointer;
 		background-color: #282a36;
+		touch-action: manipulation;
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		user-select: none;
 	}
 
 	.dot {
