@@ -9,6 +9,7 @@
 	let intervalId = $state<number | null>(null);
 	let hasRestoredFromStorage = $state(false); // Track if we've restored from localStorage
 	let isRefreshing = $state(false); // Track refresh state
+	let isNavigating = $state(false); // Track navigation state for visual feedback
 
 	// Restore from localStorage on initial load
 	$effect(() => {
@@ -62,13 +63,17 @@
 		
 		// Reset to the current initialTime (which may have been updated in settings)
 		timeLeft = initialTime;
+		// Set navigation state for visual feedback
+		isNavigating = true;
 		// Navigate back to main page after reset
-		goto(`${base}/`);
+		goto(`${base}/`, { replaceState: true });
 	}
 
 	function closeSettings() {
-		// Navigate back to main page
-		goto(`${base}/`);
+		// Set navigation state for visual feedback
+		isNavigating = true;
+		// Navigate back to main page immediately
+		goto(`${base}/`, { replaceState: true });
 	}
 
 	// Action to select all text in input
@@ -161,14 +166,14 @@
 		</div>
 		
 		<div class="form-actions">
-			<button class="btn btn-reset" on:click={resetTimer}>
-				Reset Timer
+			<button class="btn btn-reset" on:click={resetTimer} disabled={isNavigating}>
+				{isNavigating ? '⏳ Resetting...' : 'Reset Timer'}
 			</button>
-			<button class="btn btn-refresh" on:click={refreshPWA} disabled={isRefreshing}>
+			<button class="btn btn-refresh" on:click={refreshPWA} disabled={isRefreshing || isNavigating}>
 				{isRefreshing ? '🔄 Refreshing...' : '🔄 Refresh App'}
 			</button>
-			<button class="btn btn-close" on:click={closeSettings}>
-				Close
+			<button class="btn btn-close" on:click={closeSettings} disabled={isNavigating}>
+				{isNavigating ? '⏳ Closing...' : 'Close'}
 			</button>
 		</div>
 	</div>
@@ -293,6 +298,14 @@
 		cursor: not-allowed;
 		transform: none;
 		box-shadow: none;
+	}
+
+	.btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		transform: none;
+		box-shadow: none;
+		transition: opacity 0.2s ease;
 	}
 
 
