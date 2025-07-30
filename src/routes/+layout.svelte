@@ -1,7 +1,12 @@
 <script lang="ts">
 	import '../app.css';
+	import { base } from '$app/paths';
 	
 	let { children } = $props();
 </script>
 
 {@render children()}
+
+<script context="module">
+	export const ssr = false;
+</script>

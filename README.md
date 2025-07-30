@@ -1,38 +1,51 @@
-# sv
+# Untime - Interactive Countdown Timer
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A beautiful, interactive countdown timer with a responsive dot grid visualization. Built with Svelte 5 and featuring a dark Dracula theme.
 
-## Creating a project
+## Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+- **Responsive Dot Grid**: Visual countdown with dots that dim progressively
+- **Long-press Settings**: Hold to access timer configuration
+- **Dark Theme**: Beautiful Dracula-inspired dark theme
+- **Persistent State**: Timer state is saved to localStorage
+- **Responsive Design**: Adapts to any screen size
+- **Keyboard Support**: Spacebar to start/pause timer
 
-```sh
-# create a new project in the current directory
-npx sv create
+## Usage
 
-# create a new project in my-app
-npx sv create my-app
+- **Click/Tap**: Start or pause the countdown timer
+- **Long-press (500ms)**: Open settings dialog
+- **Spacebar**: Start/pause timer (when focused)
+- **Settings**: Change total time and reset timer
+
+## Development
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start development server
+pnpm dev
+
+# Build for production
+pnpm build
+
+# Preview production build
+pnpm preview
 ```
 
-## Developing
+## Technologies
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+- **Svelte 5**: Latest Svelte with runes
+- **SvelteKit**: Full-stack framework
+- **TypeScript**: Type safety
+- **Vite**: Fast build tool
+- **GitHub Pages**: Static hosting
 
-```sh
-npm run dev
+## Live Demo
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+Visit the live demo at: [https://yourusername.github.io/untime](https://yourusername.github.io/untime)
 
-## Building
+## License
 
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+MIT
