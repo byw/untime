@@ -251,8 +251,8 @@
 {/if}
 
 {#if showSettings}
-	<div class="settings-overlay" on:click={closeSettings} on:touchend|stopPropagation>
-		<div class="settings-form" on:click|stopPropagation>
+	<div class="settings-overlay">
+		<div class="settings-form">
 			<div class="form-group">
 				<label for="timeInput">Total Time (seconds):</label>
 				<input 
@@ -321,7 +321,7 @@
 		left: 0;
 		width: 100vw;
 		height: 100vh;
-		background-color: rgba(40, 42, 54, 0.9);
+		background-color: #282a36;
 		display: flex;
 		justify-content: center;
 		align-items: center;
@@ -330,10 +330,15 @@
 
 	.settings-form {
 		background-color: #44475a;
-		padding: 2rem;
-		border-radius: 8px;
-		min-width: 300px;
-		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+		padding: 3rem 2rem;
+		border-radius: 0;
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		box-shadow: none;
 		text-align: center;
 	}
 
@@ -344,26 +349,30 @@
 	}
 
 	.form-group {
-		margin-bottom: 1.5rem;
+		margin-bottom: 3rem;
+		width: 100%;
+		max-width: 400px;
 	}
 
 	.form-group label {
 		display: block;
 		color: #f8f8f2;
-		margin-bottom: 0.5rem;
+		margin-bottom: 1rem;
 		font-weight: bold;
 		text-align: center;
+		font-size: 1.2rem;
 	}
 
 	.form-group input {
 		width: 100%;
-		padding: 0.75rem;
+		padding: 1.5rem;
 		border: 2px solid #6272a4;
-		border-radius: 4px;
+		border-radius: 8px;
 		background-color: #282a36;
 		color: #f8f8f2;
-		font-size: 1rem;
+		font-size: 1.5rem;
 		box-sizing: border-box;
+		text-align: center;
 	}
 
 	.form-group input:focus {
@@ -373,18 +382,22 @@
 
 	.form-actions {
 		display: flex;
-		gap: 1rem;
+		flex-direction: column;
+		gap: 1.5rem;
 		justify-content: center;
+		width: 100%;
+		max-width: 400px;
 	}
 
 	.btn {
-		padding: 0.75rem 1.5rem;
+		padding: 1.5rem 2rem;
 		border: none;
-		border-radius: 4px;
-		font-size: 1rem;
+		border-radius: 12px;
+		font-size: 1.2rem;
 		font-weight: bold;
 		cursor: pointer;
 		transition: all 0.2s ease;
+		width: 100%;
 	}
 
 	.btn-reset {
