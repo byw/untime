@@ -15,6 +15,7 @@
 	let showInstallPrompt = $state(false); // Show install button
 	let chimeAudio = $state<HTMLAudioElement | null>(null); // Meditation chime audio
 	let wakeLock = $state<WakeLockSentinel | null>(null); // Wake lock to prevent sleep
+	let isAppInstalled = $state(false); // Track if app is installed
 
 	// Calculate responsive dot count based on screen size
 	function calculateDotCount() {
@@ -127,6 +128,12 @@
 	// PWA install prompt handling
 	$effect(() => {
 		if (typeof window !== 'undefined') {
+			// Check if app is already installed (running in standalone mode)
+			if (window.matchMedia('(display-mode: standalone)').matches || 
+				(window.navigator as any).standalone === true) {
+				isAppInstalled = true;
+			}
+
 			const handleBeforeInstallPrompt = (e: Event) => {
 				e.preventDefault();
 				deferredPrompt = e;
@@ -136,6 +143,7 @@
 			const handleAppInstalled = () => {
 				showInstallPrompt = false;
 				deferredPrompt = null;
+				isAppInstalled = true;
 			};
 
 			window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -410,6 +418,19 @@
 				<button class="btn btn-reset" on:click={resetTimer}>
 					Reset Timer
 				</button>
+				{#if deferredPrompt}
+					<button class="btn btn-install" on:click={installPWA}>
+						📱 Install App
+					</button>
+				{:else if isAppInstalled}
+					<div class="app-status">
+						✅ App Installed
+					</div>
+				{:else}
+					<div class="app-status">
+						ℹ️ Add to Home Screen
+					</div>
+				{/if}
 				<button class="btn btn-close" on:click={closeSettings}>
 					Close
 				</button>
@@ -555,6 +576,30 @@
 
 	.btn-close:hover {
 		background-color: #7c8db8;
+	}
+
+	.btn-install {
+		background: linear-gradient(135deg, #8be9fd, #00ffff);
+		color: #282a36;
+		border: none;
+		font-weight: bold;
+	}
+
+	.btn-install:hover {
+		background: linear-gradient(135deg, #00ffff, #8be9fd);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 15px rgba(139, 233, 253, 0.3);
+	}
+
+	.app-status {
+		padding: 1rem;
+		text-align: center;
+		color: #8be9fd;
+		font-size: 1rem;
+		font-weight: bold;
+		background-color: rgba(139, 233, 253, 0.1);
+		border-radius: 8px;
+		border: 1px solid rgba(139, 233, 253, 0.3);
 	}
 
 	.install-prompt {
