@@ -11,6 +11,8 @@
 	let hasRestoredFromStorage = $state(false); // Track if we've restored from localStorage
 	let showSettings = $state(false); // Show settings form
 	let longPressTimer = $state<number | null>(null); // Long press timer
+	let deferredPrompt = $state<any>(null); // PWA install prompt
+	let showInstallPrompt = $state(false); // Show install button
 
 	// Calculate responsive dot count based on screen size
 	function calculateDotCount() {
@@ -69,6 +71,30 @@
 			
 			return () => {
 				window.removeEventListener('resize', handleResize);
+			};
+		}
+	});
+
+	// PWA install prompt handling
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			const handleBeforeInstallPrompt = (e: Event) => {
+				e.preventDefault();
+				deferredPrompt = e;
+				showInstallPrompt = true;
+			};
+
+			const handleAppInstalled = () => {
+				showInstallPrompt = false;
+				deferredPrompt = null;
+			};
+
+			window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+			window.addEventListener('appinstalled', handleAppInstalled);
+
+			return () => {
+				window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+				window.removeEventListener('appinstalled', handleAppInstalled);
 			};
 		}
 	});
@@ -153,7 +179,31 @@
 		node.focus();
 		node.select();
 	}
+
+	// PWA install function
+	function installPWA() {
+		if (deferredPrompt) {
+			deferredPrompt.prompt();
+			deferredPrompt.userChoice.then((choiceResult: any) => {
+				if (choiceResult.outcome === 'accepted') {
+					console.log('User accepted the install prompt');
+				} else {
+					console.log('User dismissed the install prompt');
+				}
+				deferredPrompt = null;
+				showInstallPrompt = false;
+			});
+		}
+	}
 </script>
+
+{#if showInstallPrompt}
+	<div class="install-prompt">
+		<button class="install-btn" on:click={installPWA}>
+			📱 Install App
+		</button>
+	</div>
+{/if}
 
 {#if totalDots > 0}
 	<div 
@@ -327,5 +377,36 @@
 
 	.btn-close:hover {
 		background-color: #7c8db8;
+	}
+
+	.install-prompt {
+		position: fixed;
+		top: 20px;
+		right: 20px;
+		z-index: 1001;
+	}
+
+	.install-btn {
+		background: linear-gradient(135deg, #8be9fd, #00ffff);
+		color: #282a36;
+		border: none;
+		padding: 0.75rem 1.5rem;
+		border-radius: 25px;
+		font-size: 1rem;
+		font-weight: bold;
+		cursor: pointer;
+		box-shadow: 0 4px 15px rgba(139, 233, 253, 0.3);
+		transition: all 0.3s ease;
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	}
+
+	.install-btn:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(139, 233, 253, 0.4);
+		background: linear-gradient(135deg, #00ffff, #8be9fd);
+	}
+
+	.install-btn:active {
+		transform: translateY(0);
 	}
 </style>

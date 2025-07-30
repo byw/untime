@@ -3,10 +3,53 @@
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		
+		<!-- PWA Manifest -->
+		<link rel="manifest" href="%sveltekit.assets%/manifest.json" />
+		
+		<!-- PWA Meta Tags -->
+		<meta name="application-name" content="Untime" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="apple-mobile-web-app-title" content="Untime" />
+		<meta name="description" content="Interactive countdown timer with visual dot grid" />
+		<meta name="format-detection" content="telephone=no" />
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="theme-color" content="#8be9fd" />
+		
+		<!-- iOS Icons -->
+		<link rel="apple-touch-icon" href="%sveltekit.assets%/icon-192x192.png" />
+		<link rel="apple-touch-icon" sizes="152x152" href="%sveltekit.assets%/icon-152x152.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="%sveltekit.assets%/icon-180x180.png" />
+		<link rel="apple-touch-icon" sizes="167x167" href="%sveltekit.assets%/icon-167x167.png" />
+		
+		<!-- iOS Splash Screen -->
+		<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+		<link rel="apple-touch-startup-image" href="%sveltekit.assets%/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
+		<link rel="apple-touch-startup-image" href="%sveltekit.assets%/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
+		<link rel="apple-touch-startup-image" href="%sveltekit.assets%/splash-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)" />
+		<link rel="apple-touch-startup-image" href="%sveltekit.assets%/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" />
+		<link rel="apple-touch-startup-image" href="%sveltekit.assets%/splash-1536x2048.png" media="(min-device-width: 768px) and (max-device-width: 1024px) and (-webkit-min-device-pixel-ratio: 2)" />
+		
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>
+		
+		<!-- Service Worker Registration -->
+		<script>
+			if ('serviceWorker' in navigator) {
+				window.addEventListener('load', () => {
+					navigator.serviceWorker.register('/sw.js')
+						.then(registration => {
+							console.log('SW registered: ', registration);
+						})
+						.catch(registrationError => {
+							console.log('SW registration failed: ', registrationError);
+						});
+				});
+			}
+		</script>
 	</body>
 </html>
