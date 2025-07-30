@@ -16,6 +16,7 @@
 	let chimeAudio = $state<HTMLAudioElement | null>(null); // Meditation chime audio
 	let wakeLock = $state<WakeLockSentinel | null>(null); // Wake lock to prevent sleep
 	let isAppInstalled = $state(false); // Track if app is installed
+	let isRefreshing = $state(false); // Track refresh state
 
 	// Calculate responsive dot count based on screen size
 	function calculateDotCount() {
@@ -364,6 +365,49 @@
 			});
 		}
 	}
+
+	// Refresh PWA from server
+	async function refreshPWA() {
+		if (typeof window !== 'undefined') {
+			isRefreshing = true;
+			
+			try {
+				// If service worker is available, unregister it
+				if ('serviceWorker' in navigator) {
+					const registrations = await navigator.serviceWorker.getRegistrations();
+					for (const registration of registrations) {
+						await registration.unregister();
+					}
+				}
+				
+				// Clear all caches if available
+				if ('caches' in window) {
+					const cacheNames = await caches.keys();
+					await Promise.all(
+						cacheNames.map(cacheName => caches.delete(cacheName))
+					);
+				}
+				
+				// Clear localStorage to ensure fresh state
+				localStorage.clear();
+				
+				// Force reload from server (bypass cache)
+				window.location.reload();
+				
+			} catch (error) {
+				console.error('Failed to refresh PWA:', error);
+				isRefreshing = false;
+				
+				// Fallback: try to reload anyway
+				try {
+					window.location.reload();
+				} catch (fallbackError) {
+					console.error('Fallback reload failed:', fallbackError);
+					isRefreshing = false;
+				}
+			}
+		}
+	}
 </script>
 
 {#if showInstallPrompt}
@@ -431,6 +475,9 @@
 						ℹ️ Add to Home Screen
 					</div>
 				{/if}
+				<button class="btn btn-refresh" on:click={refreshPWA} disabled={isRefreshing}>
+					{isRefreshing ? '🔄 Refreshing...' : '🔄 Refresh App'}
+				</button>
 				<button class="btn btn-close" on:click={closeSettings}>
 					Close
 				</button>
@@ -589,6 +636,26 @@
 		background: linear-gradient(135deg, #00ffff, #8be9fd);
 		transform: translateY(-1px);
 		box-shadow: 0 4px 15px rgba(139, 233, 253, 0.3);
+	}
+
+	.btn-refresh {
+		background: linear-gradient(135deg, #50fa7b, #69ff94);
+		color: #282a36;
+		border: none;
+		font-weight: bold;
+	}
+
+	.btn-refresh:hover:not(:disabled) {
+		background: linear-gradient(135deg, #69ff94, #50fa7b);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 15px rgba(80, 250, 123, 0.3);
+	}
+
+	.btn-refresh:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		transform: none;
+		box-shadow: none;
 	}
 
 	.app-status {
