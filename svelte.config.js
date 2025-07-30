@@ -21,7 +21,7 @@ const config = {
 			strict: false
 		}),
 		paths: {
-			base: process.env.NODE_ENV === 'production' ? '' : ''
+			base: process.env.NODE_ENV === 'production' ? '/untime' : ''
 		}
 	}
 };

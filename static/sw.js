@@ -1,10 +1,10 @@
 const CACHE_NAME = 'untime-v1';
 const STATIC_RESOURCES = [
-  '/',
-  '/manifest.json',
-  '/favicon.svg',
-  '/icon-192x192.png',
-  '/icon-512x512.png'
+  '/untime/',
+  '/untime/manifest.json',
+  '/untime/favicon.svg',
+  '/untime/icon-192x192.png',
+  '/untime/icon-512x512.png'
 ];
 
 // Install event - cache static resources
@@ -42,7 +42,7 @@ self.addEventListener('fetch', event => {
       .catch(() => {
         // If both cache and network fail, return offline page
         if (event.request.destination === 'document') {
-          return caches.match('/');
+          return caches.match('/untime/');
         }
       })
   );

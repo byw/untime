@@ -2,13 +2,13 @@
   "name": "Untime - Countdown Timer",
   "short_name": "Untime",
   "description": "Interactive countdown timer with visual dot grid",
-  "start_url": "/",
+  "start_url": "/untime/",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],
   "background_color": "#282a36",
   "theme_color": "#8be9fd",
   "orientation": "any",
-  "scope": "/",
+  "scope": "/untime/",
   "categories": ["productivity", "utilities"],
   "icons": [
     {
