@@ -117,10 +117,16 @@
 		}, 800); // 800ms for touch devices
 	}
 
-	function handleTouchEnd() {
+	function handleTouchEnd(event: TouchEvent) {
 		if (longPressTimer) {
 			clearTimeout(longPressTimer);
 			longPressTimer = null;
+		}
+		
+		// If settings are shown and this touch ended outside the form, prevent default
+		if (showSettings) {
+			event.preventDefault();
+			event.stopPropagation();
 		}
 	}
 
@@ -184,7 +190,7 @@
 		showSettings = false; // Hide settings after reset
 	}
 
-	function closeSettings() {
+	function closeSettings(event?: Event) {
 		showSettings = false;
 		longPressTriggered = false; // Reset the flag when closing settings
 		// Don't automatically resume timer - let user click to start/stop
@@ -231,7 +237,7 @@
 		on:touchmove={handleTouchMove}
 		role="button"
 		tabindex="0"
-		on:keydown={(e) => e.key === ' ' && toggleTimer()}
+		on:keydown={(e) => e.key === ' ' && toggleTimer(e)}
 	>
 		{#each Array(totalDots) as _, i}
 			{@const elapsedPercentage = (initialTime - timeLeft) / initialTime}
@@ -245,7 +251,7 @@
 {/if}
 
 {#if showSettings}
-	<div class="settings-overlay" on:click={closeSettings}>
+	<div class="settings-overlay" on:click={closeSettings} on:touchend|stopPropagation>
 		<div class="settings-form" on:click|stopPropagation>
 			<div class="form-group">
 				<label for="timeInput">Total Time (seconds):</label>
