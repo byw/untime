@@ -10,6 +10,7 @@
 	let hasRestoredFromStorage = $state(false); // Track if we've restored from localStorage
 	let isRefreshing = $state(false); // Track refresh state
 	let isNavigating = $state(false); // Track navigation state for visual feedback
+	let buttonsDisabled = $state(true); // Disable buttons initially to prevent accidental clicks
 
 	// Restore from localStorage on initial load
 	$effect(() => {
@@ -22,6 +23,18 @@
 				initialTime = parseFloat(savedInitialTime);
 			}
 			hasRestoredFromStorage = true;
+		}
+	});
+
+	// Enable buttons after a delay to prevent accidental clicks from long-press release
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			// Use a 300ms delay to ensure touch events have been processed
+			const timeout = setTimeout(() => {
+				buttonsDisabled = false;
+			}, 300);
+			
+			return () => clearTimeout(timeout);
 		}
 	});
 
@@ -66,14 +79,12 @@
 		// Set navigation state for visual feedback
 		isNavigating = true;
 		// Navigate back to main page after reset
-		goto(`${base}/`, { replaceState: true });
+		goto(`${base}/`, { replaceState: false });
 	}
 
 	function closeSettings() {
-		// Set navigation state for visual feedback
-		isNavigating = true;
 		// Navigate back to main page immediately
-		goto(`${base}/`, { replaceState: true });
+		goto(`${base}/`, { replaceState: false });
 	}
 
 	// Action to select all text in input
@@ -166,13 +177,13 @@
 		</div>
 		
 		<div class="form-actions">
-			<button class="btn btn-reset" on:click={resetTimer} disabled={isNavigating}>
+			<button class="btn btn-reset" on:click={resetTimer} disabled={buttonsDisabled || isNavigating}>
 				{isNavigating ? '⏳ Resetting...' : 'Reset Timer'}
 			</button>
-			<button class="btn btn-refresh" on:click={refreshPWA} disabled={isRefreshing || isNavigating}>
+			<button class="btn btn-refresh" on:click={refreshPWA} disabled={buttonsDisabled || isRefreshing || isNavigating}>
 				{isRefreshing ? '🔄 Refreshing...' : '🔄 Refresh App'}
 			</button>
-			<button class="btn btn-close" on:click={closeSettings} disabled={isNavigating}>
+			<button class="btn btn-close" on:click={closeSettings} disabled={buttonsDisabled || isNavigating}>
 				{isNavigating ? '⏳ Closing...' : 'Close'}
 			</button>
 		</div>
