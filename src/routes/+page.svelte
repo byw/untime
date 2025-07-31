@@ -22,7 +22,9 @@
 	let hasRestoredFromStorage = $state(false); // Track if we've restored from localStorage
 	
 	// Touch/Gesture Handling
-	// Remove long-press state variables
+	let touchStartTime = $state(0);
+	let touchCount = $state(0);
+	let isTwoFingerGesture = $state(false);
 	
 	// PWA (Progressive Web App) Features
 	let deferredPrompt = $state<any>(null); // PWA install prompt
@@ -72,6 +74,12 @@
 		
 		// Clear canvas
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		
+		// Add subtle background tint when two-finger gesture is active
+		if (isTwoFingerGesture) {
+			ctx.fillStyle = 'rgba(139, 233, 253, 0.1)';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+		}
 		
 		// Calculate which dots should be dimmed
 		const elapsedPercentage = (initialTime - timeLeft) / initialTime;
@@ -139,6 +147,11 @@
 	});
 
 	// Redraw dots when timer state changes
+	$effect(() => {
+		drawDots();
+	});
+
+	// Redraw dots when two-finger gesture state changes
 	$effect(() => {
 		drawDots();
 	});
@@ -268,6 +281,51 @@
 	// Add goToSettings function
 	function goToSettings() {
 		goto(`${base}/settings`);
+	}
+
+	// Handle two-finger touch gesture for settings
+	function handleTouchStart(event: TouchEvent) {
+		touchCount = event.touches.length;
+		touchStartTime = Date.now();
+		isTwoFingerGesture = false;
+		
+		// If two fingers are detected, mark as potential two-finger gesture
+		if (touchCount === 2) {
+			isTwoFingerGesture = true;
+		}
+		
+		// Prevent default behavior to avoid conflicts
+		event.preventDefault();
+	}
+
+	function handleTouchEnd(event: TouchEvent) {
+		const touchDuration = Date.now() - touchStartTime;
+		
+		// If it was a two-finger gesture and lasted at least 200ms, go to settings
+		if (isTwoFingerGesture && touchDuration >= 200) {
+			goToSettings();
+			event.preventDefault();
+			return;
+		}
+		
+		// For single finger tap, trigger timer toggle
+		if (touchCount === 1 && touchDuration < 200) {
+			toggleTimer(event);
+		}
+		
+		// Reset gesture state
+		isTwoFingerGesture = false;
+		touchCount = 0;
+	}
+
+	function handleTouchMove(event: TouchEvent) {
+		// Update touch count in case fingers are added/removed
+		touchCount = event.touches.length;
+		
+		// If touch count changes from 2, cancel the two-finger gesture
+		if (touchCount !== 2 && isTwoFingerGesture) {
+			isTwoFingerGesture = false;
+		}
 	}
 
 	// Action to select all text in input
@@ -405,7 +463,9 @@
 <canvas
 	bind:this={canvas}
 	class="timer-canvas"
-	onclick={toggleTimer}
+	ontouchstart={handleTouchStart}
+	ontouchend={handleTouchEnd}
+	ontouchmove={handleTouchMove}
 	role="button"
 	tabindex="0"
 	onkeydown={(e) => e.key === ' ' && toggleTimer(e)}
