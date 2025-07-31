@@ -1,0 +1,29 @@
+# Cursor Rules for Untime Project
+
+## General Guidelines
+- Focus on code quality and functionality
+- Write clear, maintainable code
+- Follow existing code style and patterns
+- Add appropriate comments for complex logic
+
+## Git Behavior
+- Do NOT automatically commit and push changes after every request
+- Only commit and push when explicitly requested by the user
+- Always ask for confirmation before committing changes
+- Use descriptive commit messages that explain the changes made
+
+## Code Style
+- Use TypeScript for type safety
+- Follow Svelte 5 conventions and syntax
+- Maintain consistent indentation and formatting
+- Use meaningful variable and function names
+
+## Testing
+- Consider edge cases and error handling
+- Test functionality thoroughly before suggesting commits
+- Ensure changes work across different devices and browsers
+
+## Documentation
+- Update comments when modifying complex logic
+- Explain the purpose of new features or fixes
+- Keep README and other documentation up to date when relevant 
