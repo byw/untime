@@ -9,6 +9,7 @@
   "theme_color": "#8be9fd",
   "orientation": "any",
   "scope": "/untime/",
+  "prefer_related_applications": false,
   "categories": ["productivity", "utilities"],
   "icons": [
     {
