@@ -3,22 +3,46 @@
 	import { base } from '$app/paths';
 
 	// State management using Svelte 5 syntax
+	
+	// Screen and Layout
 	let screenWidth = $state(0);
 	let screenHeight = $state(0);
 	let totalDots = $state(0); // Start with 0 to prevent flash
 	let gridCols = $state(10); // Track number of columns for perfect grid
+	let gridRows = $state(10); // Add rows tracking
+	let canvas = $state<HTMLCanvasElement | null>(null); // Canvas element reference
+	
+	// Timer State
 	let isRunning = $state(false); // Track if timer is running
 	let timeLeft = $state(60); // Time remaining in seconds
 	let initialTime = $state(60); // Initial time for percentage calculation
 	let intervalId = $state<number | null>(null);
+	
+	// Storage and Persistence
 	let hasRestoredFromStorage = $state(false); // Track if we've restored from localStorage
+	
+	// Touch/Gesture Handling
 	let longPressTimer = $state<number | null>(null); // Long press timer
+	let startX = $state(0);
+	let startY = $state(0);
+	let longPressDetected = $state(false);
+	
+	// PWA (Progressive Web App) Features
 	let deferredPrompt = $state<any>(null); // PWA install prompt
 	let showInstallPrompt = $state(false); // Show install button
-	let chimeAudio = $state<HTMLAudioElement | null>(null); // Meditation chime audio
-	let wakeLock = $state<WakeLockSentinel | null>(null); // Wake lock to prevent sleep
 	let isAppInstalled = $state(false); // Track if app is installed
 	let isRefreshing = $state(false); // Track refresh state
+	
+	// Audio and Device Features
+	let chimeAudio = $state<HTMLAudioElement | null>(null); // Meditation chime audio
+	let wakeLock = $state<WakeLockSentinel | null>(null); // Wake lock to prevent sleep
+
+	// Canvas rendering constants
+	const DOT_SIZE = 8;
+	const GAP = 2;
+	const PADDING = 16;
+	const ACTIVE_COLOR = '#8be9fd';
+	const DIMMED_COLOR = '#44475a';
 
 	// Calculate responsive dot count based on screen size
 	function calculateDotCount() {
@@ -26,21 +50,53 @@
 			screenWidth = window.innerWidth;
 			screenHeight = window.innerHeight;
 			
-			// Calculate grid based on dot size and spacing
-			const dotSize = 8; // dot width/height
-			const gap = 2; // gap between dots
-			const padding = 16; // padding from edges (1rem = 16px)
-			
 			// Calculate available space
-			const availableWidth = screenWidth - (padding * 2);
-			const availableHeight = screenHeight - (padding * 2);
+			const availableWidth = screenWidth - (PADDING * 2);
+			const availableHeight = screenHeight - (PADDING * 2);
 			
 			// Calculate how many dots fit in each dimension
-			const cols = Math.floor(availableWidth / (dotSize + gap));
-			const rows = Math.floor(availableHeight / (dotSize + gap));
+			gridCols = Math.floor(availableWidth / (DOT_SIZE + GAP));
+			gridRows = Math.floor(availableHeight / (DOT_SIZE + GAP));
 			
-			gridCols = cols;
-			totalDots = cols * rows;
+			totalDots = gridCols * gridRows;
+		}
+	}
+
+	// Draw dots on canvas
+	function drawDots() {
+		if (!canvas || typeof window === 'undefined') return;
+		
+		const ctx = canvas.getContext('2d');
+		if (!ctx) return;
+		
+		// Set canvas size to match screen
+		canvas.width = screenWidth;
+		canvas.height = screenHeight;
+		
+		// Clear canvas
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		
+		// Calculate which dots should be dimmed
+		const elapsedPercentage = (initialTime - timeLeft) / initialTime;
+		const dotsToDim = Math.floor(elapsedPercentage * totalDots);
+		
+		// Draw all dots
+		let dotIndex = 0;
+		for (let row = 0; row < gridRows; row++) {
+			for (let col = 0; col < gridCols; col++) {
+				const x = PADDING + col * (DOT_SIZE + GAP) + DOT_SIZE / 2;
+				const y = PADDING + row * (DOT_SIZE + GAP) + DOT_SIZE / 2;
+				
+				// Set color based on timer progress
+				ctx.fillStyle = dotIndex < dotsToDim ? DIMMED_COLOR : ACTIVE_COLOR;
+				
+				// Draw circle
+				ctx.beginPath();
+				ctx.arc(x, y, DOT_SIZE / 2, 0, Math.PI * 2);
+				ctx.fill();
+				
+				dotIndex++;
+			}
 		}
 	}
 
@@ -71,8 +127,12 @@
 	$effect(() => {
 		if (typeof window !== 'undefined') {
 			calculateDotCount();
+			drawDots(); // Draw initial dots
 			
-			const handleResize = () => calculateDotCount();
+			const handleResize = () => {
+				calculateDotCount();
+				drawDots();
+			};
 			window.addEventListener('resize', handleResize);
 			
 			return () => {
@@ -80,6 +140,13 @@
 			};
 		}
 	});
+
+	// Redraw dots when timer state changes
+	$effect(() => {
+		drawDots();
+	});
+
+
 
 	// Initialize meditation chime audio
 	$effect(() => {
@@ -160,16 +227,16 @@
 	});
 
 	// Handle pointer events for cross-platform compatibility
-	let longPressDetected = $state(false);
-
 	function handlePointerDown(event: PointerEvent) {
 		// Only handle primary pointer (left mouse button or first touch)
 		if (event.isPrimary) {
-					longPressTimer = setTimeout(() => {
-			longPressDetected = true;
-			// Navigate to settings page with correct base path
-			goto(`${base}/settings`);
-		}, 800); // 800ms for long press
+			startX = event.clientX;
+			startY = event.clientY;
+			longPressTimer = setTimeout(() => {
+				longPressDetected = true;
+				// Navigate to settings page with correct base path
+				goto(`${base}/settings`);
+			}, 800); // 800ms for long press
 		}
 	}
 
@@ -188,10 +255,15 @@
 	}
 
 	function handlePointerMove(event: PointerEvent) {
-		// Cancel long press if user moves pointer
+		// Only cancel long press if user moves pointer significantly (more than 10px)
 		if (longPressTimer) {
-			clearTimeout(longPressTimer);
-			longPressTimer = null;
+			const deltaX = Math.abs(event.clientX - startX);
+			const deltaY = Math.abs(event.clientY - startY);
+			
+			if (deltaX > 10 || deltaY > 10) {
+				clearTimeout(longPressTimer);
+				longPressTimer = null;
+			}
 		}
 	}
 
@@ -226,6 +298,7 @@
 				if (timeLeft > 0) {
 					timeLeft -= intervalMs / 1000; // Decrease by the interval amount
 					if (timeLeft < 0) timeLeft = 0; // Don't go below 0
+					drawDots(); // Redraw canvas on each update
 				} else {
 					// Timer finished
 					isRunning = false;
@@ -375,30 +448,18 @@
 	</div>
 {/if}
 
-{#if totalDots > 0}
-	<div 
-		class="dots-grid"
-		style="grid-template-columns: repeat({gridCols}, 1fr);"
-		on:click={toggleTimer}
-		on:pointerdown={handlePointerDown}
-		on:pointerup={handlePointerUp}
-		on:pointermove={handlePointerMove}
-		role="button"
-		tabindex="0"
-		on:keydown={(e) => e.key === ' ' && toggleTimer(e)}
-	>
-		{#each Array(totalDots) as _, i}
-			{@const elapsedPercentage = (initialTime - timeLeft) / initialTime}
-			{@const dotsToDim = Math.floor(elapsedPercentage * totalDots)}
-			<div 
-				class="dot" 
-				class:dimmed={i < dotsToDim}
-			></div>
-		{/each}
-	</div>
-{/if}
-
-
+<!-- Replace the dots grid with a canvas -->
+<canvas
+	bind:this={canvas}
+	class="timer-canvas"
+	on:click={toggleTimer}
+	on:pointerdown={handlePointerDown}
+	on:pointerup={handlePointerUp}
+	on:pointermove={handlePointerMove}
+	role="button"
+	tabindex="0"
+	on:keydown={(e) => e.key === ' ' && toggleTimer(e)}
+></canvas>
 
 <style>
 	:global(body) {
@@ -408,13 +469,10 @@
 		overflow: hidden;
 	}
 
-	.dots-grid {
-		display: grid;
-		gap: 2px;
+	.timer-canvas {
+		display: block;
 		width: 100vw;
 		height: 100vh;
-		padding: 1rem;
-		box-sizing: border-box;
 		cursor: pointer;
 		background-color: #282a36;
 		touch-action: manipulation;
@@ -423,20 +481,7 @@
 		user-select: none;
 	}
 
-	.dot {
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		background-color: #8be9fd;
-		justify-self: center;
-		align-self: center;
-	}
-
-	.dot.dimmed {
-		background-color: #44475a;
-	}
-
-
+	/* Remove the old dots-grid and dot styles */
 
 	.install-prompt {
 		position: fixed;
