@@ -22,10 +22,7 @@
 	let hasRestoredFromStorage = $state(false); // Track if we've restored from localStorage
 	
 	// Touch/Gesture Handling
-	let longPressTimer = $state<number | null>(null); // Long press timer
-	let startX = $state(0);
-	let startY = $state(0);
-	let longPressDetected = $state(false);
+	// Remove long-press state variables
 	
 	// PWA (Progressive Web App) Features
 	let deferredPrompt = $state<any>(null); // PWA install prompt
@@ -226,57 +223,8 @@
 		}
 	});
 
-	// Handle pointer events for cross-platform compatibility
-	function handlePointerDown(event: PointerEvent) {
-		// Only handle primary pointer (left mouse button or first touch)
-		if (event.isPrimary) {
-			startX = event.clientX;
-			startY = event.clientY;
-			longPressTimer = setTimeout(() => {
-				longPressDetected = true;
-				// Prevent the current touch event before navigating
-				event.preventDefault();
-				// Navigate to settings page with correct base path
-				goto(`${base}/settings`, { state: { fromLongPress: true } });
-			}, 800); // 800ms for long press
-		}
-	}
-
-	function handlePointerUp(event: PointerEvent) {
-		if (longPressTimer) {
-			clearTimeout(longPressTimer);
-			longPressTimer = null;
-		}
-		
-		// If long press was detected, prevent any click events
-		if (longPressDetected) {
-			event.preventDefault();
-			event.stopPropagation();
-			longPressDetected = false;
-		}
-	}
-
-	function handlePointerMove(event: PointerEvent) {
-		// Only cancel long press if user moves pointer significantly (more than 10px)
-		if (longPressTimer) {
-			const deltaX = Math.abs(event.clientX - startX);
-			const deltaY = Math.abs(event.clientY - startY);
-			
-			if (deltaX > 10 || deltaY > 10) {
-				clearTimeout(longPressTimer);
-				longPressTimer = null;
-			}
-		}
-	}
-
-	// Handle click to toggle timer
+	// Simplify toggleTimer (remove longPressDetected check)
 	async function toggleTimer(event: Event) {
-		// Prevent toggle if long press was detected
-		if (longPressDetected) {
-			longPressDetected = false;
-			return;
-		}
-		
 		if (isRunning) {
 			// Stop timer
 			isRunning = false;
@@ -317,7 +265,10 @@
 		}
 	}
 
-
+	// Add goToSettings function
+	function goToSettings() {
+		goto(`${base}/settings`);
+	}
 
 	// Action to select all text in input
 	function selectAll(node: HTMLInputElement) {
@@ -444,7 +395,7 @@
 
 {#if showInstallPrompt}
 	<div class="install-prompt">
-		<button class="install-btn" on:click={installPWA}>
+		<button class="install-btn" onclick={installPWA}>
 			📱 Install App
 		</button>
 	</div>
@@ -454,14 +405,18 @@
 <canvas
 	bind:this={canvas}
 	class="timer-canvas"
-	on:click={toggleTimer}
-	on:pointerdown={handlePointerDown}
-	on:pointerup={handlePointerUp}
-	on:pointermove={handlePointerMove}
+	onclick={toggleTimer}
 	role="button"
 	tabindex="0"
-	on:keydown={(e) => e.key === ' ' && toggleTimer(e)}
+	onkeydown={(e) => e.key === ' ' && toggleTimer(e)}
 ></canvas>
+
+<!-- Move settings button below the canvas, centered -->
+<div class="settings-btn-container">
+	<button class="settings-btn-flat" onclick={goToSettings} title="Settings" aria-label="Settings">
+		<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 16 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 8c.14.31.22.65.22 1v.09A1.65 1.65 0 0 0 21 12c0 .35-.08.69-.22 1z"/></svg>
+	</button>
+</div>
 
 <style>
 	:global(body) {
@@ -474,7 +429,7 @@
 	.timer-canvas {
 		display: block;
 		width: 100vw;
-		height: 100vh;
+		height: calc(100vh - 60px); /* Reduced space for button */
 		cursor: pointer;
 		background-color: #282a36;
 		touch-action: manipulation;
@@ -515,4 +470,38 @@
 	.install-btn:active {
 		transform: translateY(0);
 	}
+
+	.settings-btn-container {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		width: 100vw;
+		height: 60px; /* Reduced height for tighter spacing */
+		position: relative;
+		z-index: 1001;
+    margin-top: -16px;
+	}
+
+	.settings-btn-flat {
+		background: none;
+		border: none;
+		color: #8be9fd;
+		font-size: 2rem;
+		padding: 0.5rem;
+		border-radius: 50%;
+		cursor: pointer;
+		transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+		outline: none;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.settings-btn-flat:hover, .settings-btn-flat:focus {
+		background: rgba(139, 233, 253, 0.12);
+		color: #50fa7b;
+		box-shadow: 0 2px 8px rgba(139, 233, 253, 0.15);
+	}
+
+	/* Remove the old settings-btn styles if present */
+	.settings-btn { display: none !important; }
 </style>
