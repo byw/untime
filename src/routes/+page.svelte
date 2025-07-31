@@ -234,8 +234,10 @@
 			startY = event.clientY;
 			longPressTimer = setTimeout(() => {
 				longPressDetected = true;
+				// Prevent the current touch event before navigating
+				event.preventDefault();
 				// Navigate to settings page with correct base path
-				goto(`${base}/settings`);
+				goto(`${base}/settings`, { state: { fromLongPress: true } });
 			}, 800); // 800ms for long press
 		}
 	}

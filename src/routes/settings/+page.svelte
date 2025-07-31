@@ -29,12 +29,19 @@
 	// Enable buttons after a delay to prevent accidental clicks from long-press release
 	$effect(() => {
 		if (typeof window !== 'undefined') {
-			// Use a 300ms delay to ensure touch events have been processed
-			const timeout = setTimeout(() => {
-				buttonsDisabled = false;
-			}, 300);
+			// Prevent all pointer events on the entire page initially
+			document.body.style.pointerEvents = 'none';
 			
-			return () => clearTimeout(timeout);
+			// Re-enable after a delay to ensure touch events have been processed
+			const timeout = setTimeout(() => {
+				document.body.style.pointerEvents = '';
+				buttonsDisabled = false;
+			}, 500); // Increased to 500ms for better protection
+			
+			return () => {
+				clearTimeout(timeout);
+				document.body.style.pointerEvents = '';
+			};
 		}
 	});
 
@@ -141,7 +148,7 @@
 
 
 
-<div class="settings-page">
+<div class="settings-page" class:pointer-disabled={buttonsDisabled}>
 	<div class="settings-form">
 		<div class="form-group">
 			<label for="timeInput">Total Time (seconds):</label>
@@ -205,6 +212,11 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		transition: opacity 0.2s ease;
+	}
+	
+	.settings-page.pointer-disabled {
+		opacity: 0.7;
 	}
 
 	.settings-form {
