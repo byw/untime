@@ -56,7 +56,10 @@
 
 
 	// Handle settings form
-	async function updateTime(newTime: number) {
+	async function updateTime(newMinutes: number) {
+		// Convert minutes to seconds
+		const newTimeInSeconds = newMinutes * 60;
+		
 		// Stop timer if it's running when time is changed
 		if (isRunning) {
 			isRunning = false;
@@ -66,9 +69,9 @@
 			}
 		}
 		
-		// Update both time values
-		timeLeft = newTime;
-		initialTime = newTime;
+		// Update both time values (in seconds)
+		timeLeft = newTimeInSeconds;
+		initialTime = newTimeInSeconds;
 	}
 
 	async function resetTimer() {
@@ -151,13 +154,13 @@
 <div class="settings-page" class:pointer-disabled={buttonsDisabled}>
 	<div class="settings-form">
 		<div class="form-group">
-			<label for="timeInput">Total Time (seconds):</label>
+			<label for="timeInput">Total Time (minutes):</label>
 			<input 
 				id="timeInput" 
 				type="number" 
 				min="1" 
-				max="3600" 
-				value={initialTime}
+				max="60" 
+				value={Math.round(initialTime / 60)}
 				on:input={(e) => {
 					const value = e.currentTarget.value;
 					if (value === '') {
@@ -175,6 +178,10 @@
 						// Set to minimum value if empty or invalid
 						updateTime(1);
 						e.currentTarget.value = '1';
+					} else {
+						// Ensure the display value matches the actual minutes
+						const minutes = Math.round(initialTime / 60);
+						e.currentTarget.value = minutes.toString();
 					}
 				}}
 				autofocus
